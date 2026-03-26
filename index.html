@@ -609,10 +609,6 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       관리자 모드
     </span>
-    <button class="admin-btn" onclick="openChangePwModal()" style="display:none">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      비밀번호 변경
-    </button>
     <button class="admin-btn danger" onclick="doLogout()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       로그아웃
@@ -874,54 +870,6 @@
   </div>
 </div>
 
-<!-- 초기 비밀번호 설정 모달 -->
-<div class="modal-overlay" id="setupModal">
-  <div class="modal" style="max-width:420px;">
-    <h2>🛡️ 관리자 비밀번호 설정</h2>
-    <p class="hint-msg">처음 사용 시 관리자 비밀번호를 설정해주세요.<br>비밀번호는 SHA-256으로 해시되어 저장되며 원문은 저장되지 않습니다.</p>
-    <div class="modal-field">
-      <label>새 비밀번호 (4자 이상)
-        <input type="password" id="setupPw" placeholder="비밀번호 입력" autocomplete="new-password" />
-      </label>
-    </div>
-    <div class="modal-field">
-      <label>비밀번호 확인
-        <input type="password" id="setupPw2" placeholder="비밀번호 재입력" autocomplete="new-password" />
-      </label>
-      <span class="err-msg" id="setupErr"></span>
-    </div>
-    <div class="form-actions" style="justify-content:flex-end;margin-top:4px;">
-      <button class="btn btn-primary" onclick="doSetup()">설정 완료</button>
-    </div>
-  </div>
-</div>
-
-<!-- 비밀번호 변경 모달 -->
-<div class="modal-overlay" id="changePwModal">
-  <div class="modal" style="max-width:400px;">
-    <h2>🔑 비밀번호 변경</h2>
-    <div class="modal-field">
-      <label>현재 비밀번호
-        <input type="password" id="cpOld" placeholder="현재 비밀번호" autocomplete="current-password" />
-      </label>
-    </div>
-    <div class="modal-field">
-      <label>새 비밀번호 (4자 이상)
-        <input type="password" id="cpNew" placeholder="새 비밀번호" autocomplete="new-password" />
-      </label>
-    </div>
-    <div class="modal-field">
-      <label>새 비밀번호 확인
-        <input type="password" id="cpNew2" placeholder="새 비밀번호 재입력" autocomplete="new-password" />
-      </label>
-      <span class="err-msg" id="cpErr"></span>
-    </div>
-    <div class="form-actions" style="justify-content:flex-end;margin-top:4px;">
-      <button class="btn btn-outline" onclick="closeChangePwModal()">취소</button>
-      <button class="btn btn-primary" onclick="doChangePw()">변경</button>
-    </div>
-  </div>
-</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -957,7 +905,6 @@
 
   // ─── 상태 ───────────────────────────────────────────────
   const STORE_KEY = 'notebook_assets_v1';
-  const HASH_KEY  = 'asset_admin_hash';
   const ADMIN_HASH = 'bc78e58d55cde1346e68f8e5fe588dedf62fa457aa646a500a53347faff6ee24'; // Admin@1234
   let assets = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
   let currentView        = 'table';
@@ -1033,47 +980,7 @@
     applyAdminUI();
     toast('🔒 로그아웃되었습니다.');
   }
-
-  function openSetupModal() {
-    document.getElementById('setupModal').classList.add('open');
-    setTimeout(() => document.getElementById('setupPw').focus(), 60);
-  }
-  async function doSetup() {
-    const pw1 = document.getElementById('setupPw').value;
-    const pw2 = document.getElementById('setupPw2').value;
-    const err = document.getElementById('setupErr');
-    if (pw1.length < 4) { err.textContent = '비밀번호는 4자 이상이어야 합니다.'; return; }
-    if (pw1 !== pw2)    { err.textContent = '비밀번호가 일치하지 않습니다.'; return; }
-    localStorage.setItem(HASH_KEY, await sha256(pw1));
-    document.getElementById('setupModal').classList.remove('open');
-    toast('✅ 비밀번호가 설정되었습니다. 로그인해주세요.');
-    openLoginModal();
-  }
-
-  function openChangePwModal() {
-    document.getElementById('changePwModal').classList.add('open');
-    document.getElementById('cpErr').textContent = '';
-    setTimeout(() => document.getElementById('cpOld').focus(), 60);
-  }
-  function closeChangePwModal() {
-    document.getElementById('changePwModal').classList.remove('open');
-    ['cpOld','cpNew','cpNew2'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('cpErr').textContent = '';
-  }
-  async function doChangePw() {
-    const old = document.getElementById('cpOld').value;
-    const pw1 = document.getElementById('cpNew').value;
-    const pw2 = document.getElementById('cpNew2').value;
-    const err = document.getElementById('cpErr');
-    if (await sha256(old) !== localStorage.getItem(HASH_KEY)) { err.textContent = '현재 비밀번호가 올바르지 않습니다.'; return; }
-    if (pw1.length < 4) { err.textContent = '새 비밀번호는 4자 이상이어야 합니다.'; return; }
-    if (pw1 !== pw2)    { err.textContent = '새 비밀번호가 일치하지 않습니다.'; return; }
-    localStorage.setItem(HASH_KEY, await sha256(pw1));
-    closeChangePwModal();
-    toast('🔑 비밀번호가 변경되었습니다.');
-  }
   document.getElementById('loginModal').addEventListener('click',    e => { if (e.target === e.currentTarget) closeLoginModal(); });
-  document.getElementById('changePwModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeChangePwModal(); });
 
   // ─── 장치 유형 선택 (등록 폼) ──────────────────────────
   function selectType(type) {
@@ -1530,8 +1437,6 @@
     document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') addAsset(); });
   });
   document.getElementById('loginPw').addEventListener('keydown',  e => { if (e.key === 'Enter') doLogin(); });
-  document.getElementById('setupPw2').addEventListener('keydown', e => { if (e.key === 'Enter') doSetup(); });
-  document.getElementById('cpNew2').addEventListener('keydown',   e => { if (e.key === 'Enter') doChangePw(); });
   document.getElementById('excelInput').addEventListener('change', e => importExcelFile(e.target.files[0]));
 
   function parseFirebaseData(raw) {
