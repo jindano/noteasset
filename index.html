@@ -605,7 +605,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       관리자 모드
     </span>
-    <button class="admin-btn" onclick="openChangePwModal()">
+    <button class="admin-btn" onclick="openChangePwModal()" style="display:none">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       비밀번호 변경
     </button>
@@ -924,6 +924,7 @@
   // ─── 상태 ───────────────────────────────────────────────
   const STORE_KEY = 'notebook_assets_v1';
   const HASH_KEY  = 'asset_admin_hash';
+  const ADMIN_HASH = 'bc78e58d55cde1346e68f8e5fe588dedf62fa457aa646a500a53347faff6ee24'; // Admin@1234
   let assets = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
   let currentView        = 'table';
   let currentFilter      = 'all';
@@ -954,8 +955,6 @@
   async function initAuth() {
     if (sessionStorage.getItem('admin_ok') === '1') {
       isAdmin = true;
-    } else if (!localStorage.getItem(HASH_KEY)) {
-      openSetupModal();
     }
     applyAdminUI();
   }
@@ -974,7 +973,7 @@
     const pw = document.getElementById('loginPw').value;
     if (!pw) { document.getElementById('loginErr').textContent = '비밀번호를 입력하세요.'; return; }
     const h = await sha256(pw);
-    if (h === localStorage.getItem(HASH_KEY)) {
+    if (h === ADMIN_HASH) {
       isAdmin = true;
       sessionStorage.setItem('admin_ok', '1');
       closeLoginModal();
