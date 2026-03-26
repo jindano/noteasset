@@ -583,6 +583,81 @@
         0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-7px)} 40%,80%{transform:translateX(7px)}
       }
       .input-error { animation: shake .35s ease; border-color: var(--danger) !important; }
+
+      /* ── Firebase Setup Wizard ── */
+      .fb-modal { max-width: 580px; }
+      .fb-stepper {
+        display: flex; align-items: center;
+        margin-bottom: 22px; gap: 0;
+      }
+      .fb-step-dot {
+        width: 30px; height: 30px; border-radius: 50%;
+        background: #e2e8f0; color: var(--muted);
+        display: flex; align-items: center; justify-content: center;
+        font-size: .8rem; font-weight: 700;
+        flex-shrink: 0; cursor: pointer;
+        transition: background .2s, color .2s; position: relative; z-index: 1;
+      }
+      .fb-step-dot.active { background: var(--primary); color: #fff; }
+      .fb-step-dot.done   { background: var(--success);  color: #fff; }
+      .fb-step-connector {
+        flex: 1; height: 2px; background: #e2e8f0; margin: 0 2px;
+        transition: background .2s;
+      }
+      .fb-step-connector.done { background: var(--success); }
+      .fb-step-title {
+        font-size: .95rem; font-weight: 700; color: var(--primary);
+        margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+      }
+      .fb-guide-list {
+        list-style: none; display: flex; flex-direction: column;
+        gap: 10px; margin: 0; padding: 0;
+      }
+      .fb-guide-item {
+        display: flex; gap: 12px; align-items: flex-start;
+        background: #f8fafc; border: 1px solid var(--border);
+        border-radius: 10px; padding: 12px 14px;
+      }
+      .fb-guide-num {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: var(--primary); color: #fff;
+        font-size: .75rem; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .fb-guide-text { font-size: .9rem; color: var(--text); line-height: 1.55; }
+      .fb-guide-text strong { color: var(--primary); }
+      .fb-code {
+        display: inline-block; background: #1e293b; color: #7dd3fc;
+        padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: .85em;
+      }
+      .fb-code-block {
+        background: #1e293b; color: #7dd3fc; padding: 12px 14px;
+        border-radius: 8px; font-family: monospace; font-size: .83rem;
+        margin: 10px 0; white-space: pre; overflow-x: auto; letter-spacing: .3px;
+      }
+      .fb-tip {
+        background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+        padding: 10px 12px; font-size: .83rem; color: #92400e;
+        margin-top: 12px; display: flex; gap: 8px; align-items: flex-start;
+        line-height: 1.5;
+      }
+      .fb-nav {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);
+      }
+      .fb-step-counter { font-size: .8rem; color: var(--muted); }
+      .fb-config-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      }
+      .fb-config-grid label {
+        text-transform: none; letter-spacing: 0;
+        font-size: .82rem; font-weight: 600; color: var(--muted);
+      }
+      .fb-config-grid input { font-size: .85rem; }
+      .fb-config-full { grid-column: 1 / -1; }
+      .fb-link { color: var(--primary); text-decoration: none; font-weight: 600; }
+      .fb-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -612,6 +687,10 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       관리자 모드
     </span>
+    <button class="admin-btn" onclick="openFirebaseSetup()" title="Firebase 동기화 설정">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Firebase 설정
+    </button>
     <button class="admin-btn save" id="saveCloudBtn" onclick="manualSave()" aria-label="데이터 저장">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       저장
@@ -877,27 +956,195 @@
 </div>
 
 
+<!-- Firebase 설정 마법사 모달 -->
+<div class="modal-overlay" id="firebaseModal">
+  <div class="modal fb-modal">
+    <h2>🔥 Firebase 연결 설정</h2>
+
+    <!-- 단계 표시줄 -->
+    <div class="fb-stepper">
+      <div class="fb-step-dot active" id="fbDot1" onclick="goToFbStep(1)" title="프로젝트 생성">1</div>
+      <div class="fb-step-connector" id="fbConn1"></div>
+      <div class="fb-step-dot" id="fbDot2" onclick="goToFbStep(2)" title="데이터베이스 생성">2</div>
+      <div class="fb-step-connector" id="fbConn2"></div>
+      <div class="fb-step-dot" id="fbDot3" onclick="goToFbStep(3)" title="보안 규칙 설정">3</div>
+      <div class="fb-step-connector" id="fbConn3"></div>
+      <div class="fb-step-dot" id="fbDot4" onclick="goToFbStep(4)" title="웹 앱 등록">4</div>
+      <div class="fb-step-connector" id="fbConn4"></div>
+      <div class="fb-step-dot" id="fbDot5" onclick="goToFbStep(5)" title="Config 입력">5</div>
+    </div>
+
+    <!-- 단계 1: Firebase 프로젝트 생성 -->
+    <div id="fbStep1">
+      <div class="fb-step-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        단계 1 · Firebase 프로젝트 만들기
+      </div>
+      <ul class="fb-guide-list">
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">1</span>
+          <span class="fb-guide-text"><a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" class="fb-link">console.firebase.google.com</a>에 접속합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">2</span>
+          <span class="fb-guide-text">Google 계정으로 로그인한 뒤 <strong>프로젝트 추가</strong> 버튼을 클릭합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">3</span>
+          <span class="fb-guide-text">원하는 <strong>프로젝트 이름</strong>을 입력하고 <strong>계속</strong>을 클릭합니다. Google Analytics는 선택 사항입니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">4</span>
+          <span class="fb-guide-text">프로젝트 생성 완료 후 <strong>계속</strong>을 클릭하면 프로젝트 대시보드로 이동합니다.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 단계 2: Realtime Database 생성 -->
+    <div id="fbStep2" style="display:none;">
+      <div class="fb-step-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        단계 2 · Realtime Database 만들기
+      </div>
+      <ul class="fb-guide-list">
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">1</span>
+          <span class="fb-guide-text">왼쪽 사이드 메뉴에서 <strong>빌드 → Realtime Database</strong>를 클릭합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">2</span>
+          <span class="fb-guide-text"><strong>데이터베이스 만들기</strong> 버튼을 클릭합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">3</span>
+          <span class="fb-guide-text">데이터베이스 위치를 선택합니다. 국내 사용 시 <strong>asia-southeast1 (싱가포르)</strong>를 권장합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">4</span>
+          <span class="fb-guide-text"><strong>다음</strong>을 클릭합니다. (보안 규칙은 다음 단계에서 별도 설정합니다.)</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 단계 3: 보안 규칙 설정 -->
+    <div id="fbStep3" style="display:none;">
+      <div class="fb-step-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        단계 3 · 보안 규칙 설정
+      </div>
+      <ul class="fb-guide-list">
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">1</span>
+          <span class="fb-guide-text">Realtime Database 화면에서 상단 <strong>규칙</strong> 탭을 클릭합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">2</span>
+          <span class="fb-guide-text">아래 규칙을 복사해 붙여넣은 뒤 <strong>게시</strong> 버튼을 클릭합니다.</span>
+        </li>
+      </ul>
+      <div class="fb-tip">
+        ⚠️ <span>아래 규칙은 누구나 읽기·쓰기가 가능합니다. <strong>내부망이나 신뢰할 수 있는 환경에서만</strong> 사용하세요. 외부 공개 서비스라면 Firebase Authentication을 적용하고 인증된 사용자만 접근하도록 규칙을 변경해야 합니다.</span>
+      </div>
+      <div class="fb-code-block">{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}</div>
+    </div>
+
+    <!-- 단계 4: 웹 앱 등록 -->
+    <div id="fbStep4" style="display:none;">
+      <div class="fb-step-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        단계 4 · 웹 앱 등록 및 Config 확인
+      </div>
+      <ul class="fb-guide-list">
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">1</span>
+          <span class="fb-guide-text">상단 왼쪽 <strong>톱니바퀴(⚙️) 아이콘 → 프로젝트 설정</strong>을 클릭합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">2</span>
+          <span class="fb-guide-text">페이지 아래의 <strong>내 앱</strong> 섹션에서 웹 아이콘 <code class="fb-code">&lt;/&gt;</code>을 클릭합니다.</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">3</span>
+          <span class="fb-guide-text">앱 닉네임을 입력하고 <strong>앱 등록</strong>을 클릭합니다. (Firebase Hosting은 선택 사항입니다.)</span>
+        </li>
+        <li class="fb-guide-item">
+          <span class="fb-guide-num">4</span>
+          <span class="fb-guide-text">화면에 표시된 <code class="fb-code">firebaseConfig</code> 객체의 각 값을 다음 단계에서 입력합니다.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 단계 5: Config 입력 -->
+    <div id="fbStep5" style="display:none;">
+      <div class="fb-step-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        단계 5 · Firebase Config 입력 및 저장
+      </div>
+      <div class="fb-config-grid">
+        <label>API Key <em style="font-weight:400;color:var(--danger);font-size:.78rem;text-transform:none;letter-spacing:0;">(필수)</em>
+          <input type="text" id="fb_apiKey" placeholder="AIzaSy..." autocomplete="off" />
+        </label>
+        <label>Auth Domain
+          <input type="text" id="fb_authDomain" placeholder="your-app.firebaseapp.com" autocomplete="off" />
+        </label>
+        <label class="fb-config-full">Database URL <em style="font-weight:400;color:var(--danger);font-size:.78rem;text-transform:none;letter-spacing:0;">(필수)</em>
+          <input type="text" id="fb_databaseURL" placeholder="https://your-app-default-rtdb.firebaseio.com" autocomplete="off" />
+        </label>
+        <label>Project ID
+          <input type="text" id="fb_projectId" placeholder="your-app" autocomplete="off" />
+        </label>
+        <label>Storage Bucket
+          <input type="text" id="fb_storageBucket" placeholder="your-app.appspot.com" autocomplete="off" />
+        </label>
+        <label>Messaging Sender ID
+          <input type="text" id="fb_messagingSenderId" placeholder="123456789" autocomplete="off" />
+        </label>
+        <label>App ID
+          <input type="text" id="fb_appId" placeholder="1:123...web:abc" autocomplete="off" />
+        </label>
+      </div>
+      <div class="fb-tip" style="margin-top:14px;">
+        💡 <span>저장 후 페이지를 새로고침하면 Firebase 동기화가 시작됩니다. 설정을 초기화하려면 빈 칸으로 저장하세요.</span>
+      </div>
+    </div>
+
+    <!-- 하단 네비게이션 -->
+    <div class="fb-nav">
+      <button class="btn btn-outline" id="fbPrevBtn" onclick="fbPrev()" style="display:none;">← 이전</button>
+      <span class="fb-step-counter" id="fbStepCounter">1 / 5</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" onclick="closeFirebaseSetup()">닫기</button>
+        <button class="btn btn-primary" id="fbNextBtn" onclick="fbNext()">다음 →</button>
+        <button class="btn btn-primary" id="fbSaveBtn" onclick="saveFbConfig()" style="display:none;">💾 저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
   // ─── Firebase 설정 (다른 PC 동기화) ─────────────────────
-  // 1. https://console.firebase.google.com/ 에서 프로젝트 생성
-  // 2. Realtime Database를 만들고 아래 config를 채워주세요
-  // 3. Database 규칙 예시 (테스트용): {"rules":{".read":true,".write":true}}
-  //    ※ 운영 시에는 Firebase Authentication 을 적용하고
-  //      인증된 사용자만 읽기/쓰기 가능하도록 규칙을 변경하세요.
+  // 관리자 로그인 후 'Firebase 설정' 버튼을 눌러 단계별 설정 마법사를 이용하세요.
   // config가 비어 있으면 기존처럼 로컬(localStorage)에만 저장됩니다.
-  const firebaseConfig = {
-    apiKey: "",
-    authDomain: "",
-    databaseURL: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
-  };
+  const FB_CONFIG_KEY = 'firebase_config';
+  const firebaseConfig = (() => {
+    try {
+      const saved = localStorage.getItem(FB_CONFIG_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Firebase 설정 로드 실패:', e);
+    }
+    return { apiKey:'', authDomain:'', databaseURL:'', projectId:'', storageBucket:'', messagingSenderId:'', appId:'' };
+  })();
 
   let dbRef = null;
   if (firebaseConfig.databaseURL) {
@@ -1017,7 +1264,73 @@
   }
   document.getElementById('loginModal').addEventListener('click',    e => { if (e.target === e.currentTarget) closeLoginModal(); });
 
-  // ─── 장치 유형 선택 (등록 폼) ──────────────────────────
+  // ─── Firebase 설정 마법사 ──────────────────────────────
+  let currentFbStep = 1;
+  const FB_TOTAL_STEPS = 5;
+
+  function openFirebaseSetup() {
+    const modal = document.getElementById('firebaseModal');
+    modal.classList.add('open');
+    goToFbStep(1);
+    const cfg = (() => {
+      try { return JSON.parse(localStorage.getItem(FB_CONFIG_KEY) || '{}'); } catch (e) { console.warn('Firebase 설정 파싱 실패:', e); return {}; }
+    })();
+    ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'].forEach(k => {
+      const el = document.getElementById('fb_' + k);
+      if (el) el.value = cfg[k] || '';
+    });
+  }
+
+  function closeFirebaseSetup() {
+    document.getElementById('firebaseModal').classList.remove('open');
+  }
+
+  function goToFbStep(n) {
+    currentFbStep = n;
+    for (let i = 1; i <= FB_TOTAL_STEPS; i++) {
+      const content = document.getElementById('fbStep' + i);
+      const dot     = document.getElementById('fbDot'  + i);
+      const conn    = document.getElementById('fbConn' + i);
+      if (content) content.style.display = (i === n) ? '' : 'none';
+      if (dot)     dot.className = 'fb-step-dot' + (i === n ? ' active' : (i < n ? ' done' : ''));
+      if (conn)    conn.className = 'fb-step-connector' + (i < n ? ' done' : '');
+    }
+    document.getElementById('fbPrevBtn').style.display     = (n > 1)              ? '' : 'none';
+    document.getElementById('fbNextBtn').style.display     = (n < FB_TOTAL_STEPS) ? '' : 'none';
+    document.getElementById('fbSaveBtn').style.display     = (n === FB_TOTAL_STEPS) ? '' : 'none';
+    document.getElementById('fbStepCounter').textContent   = n + ' / ' + FB_TOTAL_STEPS;
+  }
+
+  function fbNext() { if (currentFbStep < FB_TOTAL_STEPS) goToFbStep(currentFbStep + 1); }
+  function fbPrev() { if (currentFbStep > 1)              goToFbStep(currentFbStep - 1); }
+
+  function saveFbConfig() {
+    const keys = ['apiKey','authDomain','databaseURL','projectId','storageBucket','messagingSenderId','appId'];
+    const cfg = {};
+    keys.forEach(k => { cfg[k] = (document.getElementById('fb_' + k)?.value || '').trim(); });
+    if (!cfg.apiKey) {
+      toast('⚠️ API Key를 입력해주세요.');
+      document.getElementById('fb_apiKey').focus();
+      return;
+    }
+    if (!cfg.databaseURL) {
+      toast('⚠️ Database URL을 입력해주세요.');
+      document.getElementById('fb_databaseURL').focus();
+      return;
+    }
+    localStorage.setItem(FB_CONFIG_KEY, JSON.stringify(cfg));
+    closeFirebaseSetup();
+    toast('✅ Firebase 설정이 저장되었습니다.');
+    setTimeout(() => {
+      if (confirm('Firebase 설정이 저장되었습니다.\n페이지를 새로고침하면 동기화가 시작됩니다.\n\n지금 새로고침할까요?')) {
+        location.reload();
+      }
+    }, 300);
+  }
+
+  document.getElementById('firebaseModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeFirebaseSetup(); });
+
+
   function selectType(type) {
     selectedType = type;
     document.getElementById('typeBtnNotebook').className = 'type-option' + (type === 'notebook' ? ' selected-notebook' : '');
