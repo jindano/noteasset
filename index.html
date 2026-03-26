@@ -612,7 +612,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       관리자 모드
     </span>
-    <button class="admin-btn save" id="saveCloudBtn" onclick="manualSave()">
+    <button class="admin-btn save" id="saveCloudBtn" onclick="manualSave()" aria-label="데이터 저장">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       저장
     </button>
@@ -932,22 +932,30 @@
 
   async function manualSave() {
     const btn = document.getElementById('saveCloudBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '저장 중...'; }
-    localStorage.setItem(STORE_KEY, JSON.stringify(assets));
-    if (dbRef) {
-      try {
-        await dbRef.set(assets);
-        toast('☁️ 클라우드에 저장되었습니다. 다른 PC에서 확인하세요.');
-      } catch (err) {
-        console.error('Firebase 저장 실패:', err);
-        toast('⚠️ 클라우드 저장 실패. 로컬에만 저장됨.');
-      }
-    } else {
-      toast('💾 로컬에 저장되었습니다. (클라우드 동기화를 사용하려면 Firebase 설정을 입력하세요.)');
-    }
+    let originalHtml = null;
     if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 저장';
+      originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = originalHtml.replace('저장', '저장 중...');
+    }
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(assets));
+      if (dbRef) {
+        try {
+          await dbRef.set(assets);
+          toast('☁️ 클라우드에 저장되었습니다. 다른 PC에서 확인하세요.');
+        } catch (err) {
+          console.error('Firebase 저장 실패:', err);
+          toast('⚠️ 클라우드 저장 실패. 로컬에만 저장됨.');
+        }
+      } else {
+        toast('💾 로컬에 저장되었습니다. (클라우드 동기화를 사용하려면 Firebase 설정을 입력하세요.)');
+      }
+    } finally {
+      if (btn && originalHtml !== null) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
     }
   }
 
