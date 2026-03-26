@@ -575,7 +575,7 @@
       }
       .modal-field { margin-bottom: 14px; }
       .err-msg { color: var(--danger); font-size: .82rem; margin-top: 6px; min-height: 20px; display: block; }
-      .hint-msg { color: var(--muted); font-size: .82rem; margin-bottom: 18px; line-height: 1.55; }
+
       @keyframes shake {
         0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-7px)} 40%,80%{transform:translateX(7px)}
       }
@@ -856,7 +856,6 @@
 <div class="modal-overlay" id="loginModal">
   <div class="modal" style="max-width:380px;">
     <h2>🔐 관리자 로그인</h2>
-    <p class="hint-msg">고정 비밀번호: <strong>Admin@1234</strong></p>
     <div class="modal-field">
       <label>비밀번호
         <input type="password" id="loginPw" placeholder="관리자 비밀번호 입력" autocomplete="current-password" />
@@ -905,7 +904,7 @@
 
   // ─── 상태 ───────────────────────────────────────────────
   const STORE_KEY = 'notebook_assets_v1';
-  const ADMIN_HASH = 'bc78e58d55cde1346e68f8e5fe588dedf62fa457aa646a500a53347faff6ee24'; // Admin@1234
+  const ADMIN_HASH = 'bc78e58d55cde1346e68f8e5fe588dedf62fa457aa646a500a53347faff6ee24';
   let assets = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
   let currentView        = 'table';
   let currentFilter      = 'all';
