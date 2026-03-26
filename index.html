@@ -592,6 +592,10 @@
     <div>
       <h1>PC 자산 리스트</h1>
       <p>노트북 &amp; 데스크탑 자산 등록 및 관리</p>
+      <span id="syncBadge" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;margin-top:4px;">
+        <svg width="8" height="8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#94a3b8"/></svg>
+        로컬 저장
+      </span>
     </div>
   </div>
   <div id="adminLoginBtn" class="admin-bar-wrap">
@@ -919,9 +923,38 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
+  // ─── Firebase 설정 (다른 PC 동기화) ─────────────────────
+  // 1. https://console.firebase.google.com/ 에서 프로젝트 생성
+  // 2. Realtime Database를 만들고 아래 config를 채워주세요
+  // 3. Database 규칙 예시 (테스트용): {"rules":{".read":true,".write":true}}
+  //    ※ 운영 시에는 Firebase Authentication 을 적용하고
+  //      인증된 사용자만 읽기/쓰기 가능하도록 규칙을 변경하세요.
+  // config가 비어 있으면 기존처럼 로컬(localStorage)에만 저장됩니다.
+  const firebaseConfig = {
+    apiKey: "",
+    authDomain: "",
+    databaseURL: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  };
+
+  let dbRef = null;
+  if (firebaseConfig.databaseURL) {
+    try {
+      firebase.initializeApp(firebaseConfig);
+      dbRef = firebase.database().ref('assets');
+    } catch (e) {
+      console.error('Firebase 초기화 실패:', e);
+    }
+  }
+
   // ─── 상태 ───────────────────────────────────────────────
   const STORE_KEY = 'notebook_assets_v1';
   const HASH_KEY  = 'asset_admin_hash';
@@ -936,6 +969,12 @@
 
   function save() {
     localStorage.setItem(STORE_KEY, JSON.stringify(assets));
+    if (dbRef) {
+      dbRef.set(assets).catch(err => {
+        console.error('Firebase 저장 실패:', err);
+        toast('⚠️ 클라우드 저장 실패. 로컬에만 저장됨.');
+      });
+    }
   }
 
   // ─── 인증 ───────────────────────────────────────────────
@@ -1494,6 +1533,36 @@
   document.getElementById('setupPw2').addEventListener('keydown', e => { if (e.key === 'Enter') doSetup(); });
   document.getElementById('cpNew2').addEventListener('keydown',   e => { if (e.key === 'Enter') doChangePw(); });
   document.getElementById('excelInput').addEventListener('change', e => importExcelFile(e.target.files[0]));
+
+  function parseFirebaseData(raw) {
+    if (!raw) return [];
+    const arr = Array.isArray(raw) ? raw : Object.values(raw);
+    return arr.filter(Boolean);
+  }
+
+  // ─── Firebase 실시간 동기화 ─────────────────────────────
+  if (dbRef) {
+    let firstSync = true;
+    dbRef.on('value', snap => {
+      const raw = snap.val();
+      if (firstSync) {
+        firstSync = false;
+        if (!raw && assets.length) {
+          // 기존 로컬 데이터를 Firebase로 마이그레이션
+          dbRef.set(assets);
+          return;
+        }
+      }
+      assets = parseFirebaseData(raw);
+      localStorage.setItem(STORE_KEY, JSON.stringify(assets));
+      renderAll();
+    });
+    // 동기화 상태 표시
+    const badge = document.getElementById('syncBadge');
+    if (badge) {
+      badge.innerHTML = '<svg width="8" height="8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#22c55e"/></svg> 클라우드 동기화';
+    }
+  }
 
   // ─── 초기화 ─────────────────────────────────────────────
   initAuth();
