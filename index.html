@@ -919,10 +919,12 @@
   let selectedType  = 'notebook';
   let selectedStockStatus = 'inuse';
   let isAdmin       = false;
+  let isLocalWrite  = false;
 
   function save() {
     localStorage.setItem(STORE_KEY, JSON.stringify(assets));
     if (dbRef) {
+      isLocalWrite = true;
       dbRef.set(assets).catch(err => {
         console.error('Firebase 저장 실패:', err);
         toast('⚠️ 클라우드 저장 실패. 로컬에만 저장됨.');
@@ -942,6 +944,7 @@
       localStorage.setItem(STORE_KEY, JSON.stringify(assets));
       if (dbRef) {
         try {
+          isLocalWrite = true;
           await dbRef.set(assets);
           toast('☁️ 클라우드에 저장되었습니다. 다른 PC에서 확인하세요.');
         } catch (err) {
@@ -1482,6 +1485,23 @@
 
   // ─── Firebase 실시간 동기화 ─────────────────────────────
   if (dbRef) {
+    const badge = document.getElementById('syncBadge');
+
+    // 연결 상태 초기값: 연결 중...
+    if (badge) {
+      badge.innerHTML = '<svg width="8" height="8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#f59e0b"/></svg> 연결 중...';
+    }
+
+    // 실시간 연결 상태 모니터링 (.info/connected)
+    firebase.database().ref('.info/connected').on('value', snap => {
+      if (!badge) return;
+      if (snap.val() === true) {
+        badge.innerHTML = '<svg width="8" height="8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#22c55e"/></svg> 클라우드 동기화';
+      } else {
+        badge.innerHTML = '<svg width="8" height="8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#ef4444"/></svg> 오프라인';
+      }
+    });
+
     let firstSync = true;
     dbRef.on('value', snap => {
       const raw = snap.val();
@@ -1492,16 +1512,17 @@
           dbRef.set(assets);
           return;
         }
+      } else {
+        // 다른 PC에서 데이터가 변경되었을 때 알림
+        if (!isLocalWrite) {
+          toast('🔄 다른 PC에서 데이터가 동기화되었습니다.');
+        }
+        isLocalWrite = false;
       }
       assets = parseFirebaseData(raw);
       localStorage.setItem(STORE_KEY, JSON.stringify(assets));
       renderAll();
     });
-    // 동기화 상태 표시
-    const badge = document.getElementById('syncBadge');
-    if (badge) {
-      badge.innerHTML = '<svg width="8" height="8" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#22c55e"/></svg> 클라우드 동기화';
-    }
   }
 
   // ─── 초기화 ─────────────────────────────────────────────
